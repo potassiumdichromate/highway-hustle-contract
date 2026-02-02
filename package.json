@@ -1,0 +1,34 @@
+{
+  "name": "highway-hustle-blockchain",
+  "version": "1.0.0",
+  "description": "Highway Hustle Smart Contracts for 0G Mainnet",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network zerog_testnet",
+    "deploy:mainnet": "hardhat run scripts/deploy-mainnet.js --network zerog_mainnet",
+    "estimate": "node scripts/estimate-costs.js",
+    "monitor": "node scripts/monitor-mainnet.js",
+    "test": "hardhat test"
+  },
+  "keywords": [
+    "blockchain",
+    "0g",
+    "smart-contracts",
+    "highway-hustle"
+  ],
+  "author": "Highway Hustle Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "hardhat": "^2.17.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "type": "module"
+}
