@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\RENTKAR\\Desktop\\Highway-Hustle\\Blockchain\\contracts\\PlayerSessionTracker.sol": {
-      "lastModificationDate": 1769932230510,
-      "contentHash": "023693e47543479173cb251b5e219a33",
+      "lastModificationDate": 1769937297744,
+      "contentHash": "0862037ba6c52645b7f5920f25bb20ed",
       "sourceName": "contracts/PlayerSessionTracker.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -35,6 +35,150 @@
       ],
       "artifacts": [
         "PlayerSessionTracker"
+      ]
+    },
+    "C:\\Users\\RENTKAR\\Desktop\\Highway-Hustle\\Blockchain\\contracts\\VehicleManager.sol": {
+      "lastModificationDate": 1770278144620,
+      "contentHash": "2bad904f5b02d97d39122ab87176410f",
+      "sourceName": "contracts/VehicleManager.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "VehicleManager"
+      ]
+    },
+    "C:\\Users\\RENTKAR\\Desktop\\Highway-Hustle\\Blockchain\\contracts\\MissionManager.sol": {
+      "lastModificationDate": 1770278406963,
+      "contentHash": "d7ca05a40ea8e9fce15c40107d46db91",
+      "sourceName": "contracts/MissionManager.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "MissionManager"
+      ]
+    },
+    "C:\\Users\\RENTKAR\\Desktop\\Highway-Hustle\\Blockchain\\contracts\\ScoreManager.sol": {
+      "lastModificationDate": 1770279423309,
+      "contentHash": "c52756b510c2a121e1746cbc2527b189",
+      "sourceName": "contracts/ScoreManager.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ScoreManager"
+      ]
+    },
+    "C:\\Users\\RENTKAR\\Desktop\\Highway-Hustle\\Blockchain\\contracts\\EconomyManager.sol": {
+      "lastModificationDate": 1770279620261,
+      "contentHash": "baee9bc96dc4371d5dbb58cccfab1195",
+      "sourceName": "contracts/EconomyManager.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "EconomyManager"
       ]
     }
   }

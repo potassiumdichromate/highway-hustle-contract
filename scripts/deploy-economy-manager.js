@@ -1,0 +1,153 @@
+// scripts/deploy-economy-manager.js (ESM VERSION)
+import hre from "hardhat";
+import readline from "readline";
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+function question(query) {
+  return new Promise(resolve => rl.question(query, resolve));
+}
+
+async function main() {
+  console.log("🚨 ========== MAINNET DEPLOYMENT WARNING ========== 🚨\n");
+  console.log("⚠️  You are about to deploy EconomyManager to 0G MAINNET!");
+  console.log("⚠️  This will use REAL 0G tokens for deployment!");
+  console.log("⚠️  Make sure you have:");
+  console.log("    1. Funded your deployer wallet with real 0G tokens");
+  console.log("    2. Tested the contract on testnet first");
+  console.log("    3. Backed up your private key securely");
+  console.log("    4. Double-checked the contract code\n");
+
+  const confirm = await question("Type 'DEPLOY' to continue or anything else to cancel: ");
+  
+  if (confirm !== 'DEPLOY') {
+    console.log("\n❌ Deployment cancelled. Safety first!");
+    rl.close();
+    process.exit(0);
+  }
+
+  console.log("\n🚀 Starting MAINNET deployment...\n");
+
+  // Get deployer account
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("👛 Deploying with account:", deployer.address);
+  
+  const balance = await hre.ethers.provider.getBalance(deployer.address);
+  const balanceInEther = hre.ethers.formatEther(balance);
+  console.log("💰 Account balance:", balanceInEther, "0G");
+
+  // Safety check
+  if (parseFloat(balanceInEther) < 10) {
+    console.log("\n⚠️  WARNING: Low balance! Recommended minimum: 10 0G");
+    const proceedLow = await question("Continue anyway? (yes/no): ");
+    if (proceedLow.toLowerCase() !== 'yes') {
+      console.log("\n❌ Deployment cancelled. Please fund your wallet first.");
+      rl.close();
+      process.exit(0);
+    }
+  }
+
+  console.log("\n💰 Deploying EconomyManager contract...");
+  
+  // Get contract factory
+  const EconomyManager = await hre.ethers.getContractFactory("EconomyManager");
+  
+  // Estimate deployment cost
+  try {
+    const deploymentData = EconomyManager.getDeployTransaction();
+    const gasEstimate = await hre.ethers.provider.estimateGas({
+      data: deploymentData.data
+    });
+    const feeData = await hre.ethers.provider.getFeeData();
+    const estimatedCost = gasEstimate * feeData.gasPrice;
+    
+    console.log("⛽ Estimated deployment cost:", hre.ethers.formatEther(estimatedCost), "0G");
+    console.log("⛽ Estimated gas:", gasEstimate.toString());
+  } catch (e) {
+    console.log("⚠️  Could not estimate gas, proceeding anyway...");
+  }
+
+  const deployConfirm = await question("\nProceed with deployment? (yes/no): ");
+  if (deployConfirm.toLowerCase() !== 'yes') {
+    console.log("\n❌ Deployment cancelled.");
+    rl.close();
+    process.exit(0);
+  }
+
+  console.log("\n📤 Sending deployment transaction...");
+  const contract = await EconomyManager.deploy();
+
+  console.log("⏳ Waiting for deployment confirmation...");
+  await contract.waitForDeployment();
+  
+  const contractAddress = await contract.getAddress();
+
+  console.log("\n✅ ========== DEPLOYMENT SUCCESSFUL! ========== ✅\n");
+  console.log("💰 Contract Address:", contractAddress);
+  console.log("\n📋 CRITICAL: Add this to your backend .env file:");
+  console.log("─────────────────────────────────────────────────");
+  console.log(`ECONOMY_CONTRACT_ADDRESS=${contractAddress}`);
+  console.log("─────────────────────────────────────────────────");
+  
+  console.log("\n🔗 View on 0G Mainnet Block Explorer:");
+  console.log(`https://scan.0g.ai/address/${contractAddress}`);
+
+  // Verify initial state
+  console.log("\n🔍 Verifying deployment...");
+  const stats = await contract.getStats();
+  console.log("📊 Initial Contract Stats:");
+  console.log("   ✓ Total Transactions:", stats[0].toString());
+  console.log("   ✓ Total Rewards Claimed:", stats[1].toString());
+  console.log("   ✓ Total Players:", stats[2].toString());
+  console.log("   ✓ Total Currency in Circulation:", stats[3].toString());
+  console.log("   ✓ Owner:", stats[4]);
+
+  console.log("\n💎 Transaction Types Supported:");
+  console.log("   0. GameEarning - Earned from gameplay");
+  console.log("   1. VehiclePurchase - Spent on vehicle");
+  console.log("   2. MissionReward - Mission completion");
+  console.log("   3. AchievementReward - Achievement unlock");
+  console.log("   4. DailyReward - Daily login");
+  console.log("   5. WeeklyReward - Weekly bonus");
+  console.log("   6. ReferralBonus - Referral rewards");
+  console.log("   7. AdminGrant - Admin granted");
+  console.log("   8. Other - Miscellaneous");
+
+  console.log("\n🎁 Daily Reward System:");
+  console.log("   ✓ Base Reward: 1000 currency");
+  console.log("   ✓ Streak Bonus: +100 per day");
+  console.log("   ✓ Max Streak Bonus: 5000");
+
+  // Post-deployment checklist
+  console.log("\n📝 POST-DEPLOYMENT CHECKLIST:");
+  console.log("   [ ] Save contract address to backend .env file");
+  console.log("   [ ] Backup contract address to secure location");
+  console.log("   [ ] Verify contract on block explorer");
+  console.log("   [ ] Test transaction recording");
+  console.log("   [ ] Test reward claiming");
+  console.log("   [ ] Test daily reward system");
+  console.log("   [ ] Monitor deployer wallet balance daily");
+  console.log("   [ ] Set up balance alerts (< 50 0G)");
+  console.log("   [ ] Document deployment in team records");
+
+  // Final balance
+  const finalBalance = await hre.ethers.provider.getBalance(deployer.address);
+  console.log("\n💰 Remaining balance:", hre.ethers.formatEther(finalBalance), "0G");
+  console.log("💸 Deployment cost:", hre.ethers.formatEther(balance - finalBalance), "0G");
+
+  console.log("\n✨ Deployment complete! Update your backend .env and restart the server.");
+  console.log("🚨 REMEMBER: Keep your private key secure and NEVER commit it to git!\n");
+
+  rl.close();
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("\n❌ DEPLOYMENT FAILED:", error);
+    rl.close();
+    process.exit(1);
+  });

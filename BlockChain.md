@@ -1,0 +1,440 @@
+# Highway Hustle Blockchain Integration Documentation
+
+## Overview
+
+Highway Hustle implements a comprehensive on-chain game data system on the 0G blockchain network. This document outlines all blockchain contracts, their functionalities, and data flows.
+
+---
+
+## Network Information
+
+**Network:** 0G Mainnet  
+**Chain ID:** 16661  
+**RPC URL:** https://evmrpc.0g.ai  
+**Block Explorer:** https://chainscan.0g.ai
+
+---
+
+## Deployed Contracts
+
+### 1. PlayerSessionTracker
+**Contract Address:** `0x47B9D5B62C8302a89C435be307b9eAA8847FB295`  
+**Explorer:** https://chainscan.0g.ai/address/0x47B9D5B62C8302a89C435be307b9eAA8847FB295
+
+**Purpose:** Tracks all player API interactions and gameplay sessions on-chain.
+
+**Recorded Data:**
+- Player identifier (wallet address, email, discord, or telegram)
+- Wallet address (if available)
+- Session type (`all`, `privy`, `game`, `gamemode`, `vehicle`)
+- Player currency amount
+- Best score across all game modes
+- Session timestamp
+
+**Key Functions:**
+- `recordSession()` - Records a new player session
+- `getPlayerSessionCount()` - Returns total sessions for a player
+- `getPlayerSessionIds()` - Returns array of session IDs
+- `getSession()` - Returns session details by ID
+- `getStats()` - Returns contract-level statistics
+
+**Trigger:** Every GET request to player data endpoints automatically records a session asynchronously.
+
+---
+
+### 2. VehicleManager
+**Contract Address:** `0xB9305b4898418c31dB5995b6dbBB0D29Ce63dd05`  
+**Explorer:** https://chainscan.0g.ai/address/0xB9305b4898418c31dB5995b6dbBB0D29Ce63dd05
+
+**Purpose:** Manages vehicle ownership, purchases, and switching on-chain.
+
+**Vehicle Types:**
+- 0: Jeep (default, free)
+- 1: Van
+- 2: Sierra
+- 3: Sedan
+- 4: Lamborghini
+
+**Recorded Data:**
+- Vehicle purchases (type, price, timestamp)
+- Vehicle switches (from vehicle, to vehicle, timestamp)
+- Player vehicle ownership status
+- Currently selected vehicle
+
+**Key Functions:**
+- `purchaseVehicle()` - Records vehicle purchase on-chain
+- `switchVehicle()` - Records vehicle switch on-chain
+- `getPlayerVehicles()` - Returns array of owned vehicles
+- `getSelectedVehicle()` - Returns currently selected vehicle
+- `getPlayerPurchaseIds()` - Returns all purchase transaction IDs
+- `getPlayerSwitchIds()` - Returns all switch transaction IDs
+
+**Trigger:** Called when player purchases or switches vehicles via API.
+
+---
+
+### 3. MissionManager
+**Contract Address:** `0x4C2593C98bA57d24AFBBfd4ad62AeD2611416320`  
+**Explorer:** https://chainscan.0g.ai/address/0x4C2593C98bA57d24AFBBfd4ad62AeD2611416320
+
+**Purpose:** Tracks mission progress, completions, and achievement unlocks.
+
+**Mission Types:**
+- 0: Distance - Reach X distance
+- 1: Score - Achieve X score
+- 2: Currency - Earn X currency
+- 3: TimeAttack - Complete time attack mode
+- 4: ConsecutiveWins - Win X times in a row
+- 5: VehicleUnlock - Unlock all vehicles
+- 6: GameMode - Play all game modes
+- 7: DailyStreak - Play X days in a row
+- 8: Custom - Custom missions
+
+**Default Achievements:**
+- `ACHIEVED_1000M` - Travel 1000 meters in one run
+- `ACHIEVED_5000M` - Travel 5000 meters in one run
+- `FIRST_WIN` - Win first game
+- `SPEED_DEMON` - Reach maximum speed
+- `COLLECTOR` - Unlock all vehicles
+- `RICH_RACER` - Accumulate 100,000 currency
+- `VETERAN` - Play for 10 hours
+- `PERFECT_RUN` - Complete run without damage
+
+**Recorded Data:**
+- Mission definitions (ID, name, type, target, reward)
+- Mission progress updates
+- Mission completions (player, mission ID, completion value, reward)
+- Achievement unlocks (player, achievement ID, timestamp)
+
+**Key Functions:**
+- `createMission()` - Creates new mission
+- `updateMissionProgress()` - Updates player mission progress
+- `completeMission()` - Records mission completion
+- `unlockAchievement()` - Unlocks achievement for player
+- `batchUnlockAchievements()` - Unlocks multiple achievements
+- `getPlayerMissions()` - Returns player's missions
+- `getPlayerAchievements()` - Returns player's achievements
+
+**Trigger:** Called when player completes missions or unlocks achievements.
+
+---
+
+### 4. ScoreManager
+**Contract Address:** `0xc82c80C0d243df6eE8d08D82EAF776b7D1E3e464`  
+**Explorer:** https://chainscan.0g.ai/address/0xc82c80C0d243df6eE8d08D82EAF776b7D1E3e464
+
+**Purpose:** Records game scores, maintains leaderboards, and creates immutable snapshots.
+
+**Game Modes:**
+- 0: OneWay
+- 1: TwoWay
+- 2: TimeAttack
+- 3: Bomb
+
+**Recorded Data:**
+- Score submissions (mode, score, distance, currency earned, playtime)
+- Best scores per mode per player
+- Total games played and total score
+- Leaderboard rankings per game mode
+- Periodic leaderboard snapshots (daily, weekly, monthly)
+
+**Key Functions:**
+- `submitScore()` - Submit score for a game mode
+- `batchSubmitScores()` - Submit multiple scores at once
+- `verifyScore()` - Mark score as verified (anti-cheat)
+- `createLeaderboardSnapshot()` - Create leaderboard snapshot
+- `getPlayerStats()` - Returns player statistics
+- `getLeaderboard()` - Returns top N players for a mode
+- `getPlayerRank()` - Returns player's rank in a mode
+- `getSnapshot()` - Returns snapshot details
+- `getSnapshotEntries()` - Returns snapshot leaderboard
+
+**Anti-Cheat Features:**
+- Minimum 30 seconds between submissions
+- Maximum score validation (1,000,000 default)
+- Score verification system
+- Timestamp tracking
+
+**Trigger:** Called when player completes a game and submits score.
+
+---
+
+### 5. EconomyManager
+**Contract Address:** `0x1821E2654B5700d6C7C76277991EC6076696E829`  
+**Explorer:** https://chainscan.0g.ai/address/0x1821E2654B5700d6C7C76277991EC6076696E829
+
+**Purpose:** Tracks all currency transactions, rewards, and economic activities.
+
+**Transaction Types:**
+- 0: GameEarning - Currency earned from gameplay
+- 1: VehiclePurchase - Currency spent on vehicles
+- 2: MissionReward - Mission completion rewards
+- 3: AchievementReward - Achievement unlock rewards
+- 4: DailyReward - Daily login rewards
+- 5: WeeklyReward - Weekly bonus rewards
+- 6: ReferralBonus - Referral bonuses
+- 7: AdminGrant - Admin-granted currency
+- 8: Other - Miscellaneous transactions
+
+**Recorded Data:**
+- All currency transactions (amount, type, description)
+- Player balances (current, weekly, lifetime)
+- Total earned and total spent per player
+- Reward claims (reward ID, amount, timestamp)
+- Daily login streaks and bonus calculations
+
+**Daily Reward System:**
+- Base reward: 1,000 currency
+- Streak bonus: +100 currency per consecutive day
+- Maximum streak bonus: 5,000 currency
+- Streak resets if a day is missed
+
+**Key Functions:**
+- `recordTransaction()` - Record currency transaction
+- `batchRecordTransactions()` - Record multiple transactions
+- `claimReward()` - Claim specific reward
+- `claimDailyReward()` - Claim daily login reward with streak
+- `updateBalance()` - Admin balance update
+- `getPlayerEconomy()` - Returns player economic stats
+- `getBalance()` - Returns current balance
+- `getDailyStreak()` - Returns streak information
+- `calculateDailyReward()` - Calculate projected daily reward
+
+**Anti-Cheat Features:**
+- Maximum transaction amount: 1,000,000
+- Minimum 5 seconds between spending transactions
+- Balance validation before spending
+- Duplicate reward claim prevention
+
+**Trigger:** Called for all currency-related activities (earning, spending, rewards).
+
+---
+
+## Data Flow Architecture
+
+### 1. Session Recording Flow
+```
+Player API Call (GET) → Backend API → MongoDB Response → 
+Blockchain Service (Async) → PlayerSessionTracker.recordSession()
+```
+
+### 2. Vehicle Purchase Flow
+```
+Player Buys Vehicle → Backend API → MongoDB Update → 
+Vehicle Blockchain Service → VehicleManager.purchaseVehicle()
+```
+
+### 3. Vehicle Switch Flow
+```
+Player Switches Vehicle → Backend API → MongoDB Update → 
+Vehicle Blockchain Service → VehicleManager.switchVehicle()
+```
+
+### 4. Score Submission Flow
+```
+Player Completes Game → Backend API → MongoDB Update → 
+Score Blockchain Service → ScoreManager.submitScore()
+```
+
+### 5. Mission Completion Flow
+```
+Player Completes Mission → Backend API → MongoDB Update → 
+Mission Blockchain Service → MissionManager.completeMission()
+```
+
+### 6. Achievement Unlock Flow
+```
+Player Unlocks Achievement → Backend API → MongoDB Update → 
+Mission Blockchain Service → MissionManager.unlockAchievement()
+```
+
+### 7. Currency Transaction Flow
+```
+Player Earns/Spends Currency → Backend API → MongoDB Update → 
+Economy Blockchain Service → EconomyManager.recordTransaction()
+```
+
+### 8. Daily Reward Flow
+```
+Player Claims Daily Reward → Backend API → 
+Economy Blockchain Service → EconomyManager.claimDailyReward() → 
+MongoDB Update with new balance
+```
+
+---
+
+## Integration Strategy
+
+### Async Recording Pattern
+All blockchain write operations are executed asynchronously to avoid blocking API responses. The pattern follows:
+
+1. **Immediate Response:** API responds to client with MongoDB data immediately
+2. **Background Recording:** Blockchain transaction is submitted in the background
+3. **Non-Blocking:** API performance is unaffected by blockchain latency
+4. **Logging:** Success/failure is logged but does not impact user experience
+
+### Error Handling
+- Blockchain failures are logged but do not break API functionality
+- MongoDB remains the source of truth for real-time gameplay
+- Blockchain provides immutable historical record and verification
+
+---
+
+## Smart Contract Events
+
+All contracts emit events for transparency and tracking:
+
+### PlayerSessionTracker Events
+- `SessionRecorded` - New session recorded
+- `NewPlayerRegistered` - First-time player detected
+
+### VehicleManager Events
+- `VehiclePurchased` - Vehicle purchased
+- `VehicleSwitched` - Vehicle switched
+- `NewPlayer` - New player registered
+
+### MissionManager Events
+- `MissionCreated` - New mission added
+- `MissionCompleted` - Mission completed by player
+- `MissionProgressUpdated` - Progress updated
+- `AchievementUnlocked` - Achievement unlocked
+- `NewPlayer` - New player registered
+
+### ScoreManager Events
+- `ScoreSubmitted` - Score submitted
+- `NewHighScore` - New personal best achieved
+- `LeaderboardSnapshotCreated` - Snapshot created
+- `ScoreVerified` - Score marked as verified
+- `NewPlayer` - New player registered
+
+### EconomyManager Events
+- `TransactionRecorded` - Transaction recorded
+- `RewardClaimed` - Reward claimed
+- `DailyRewardClaimed` - Daily reward claimed with streak
+- `BalanceUpdated` - Balance changed
+- `NewPlayer` - New player registered
+
+---
+
+## Gas Costs and Performance
+
+### Average Gas Costs (0G Network)
+- Session recording: ~0.0001 0G
+- Vehicle switch: ~0.0002 0G
+- Score submission: ~0.0002 0G
+- Mission completion: ~0.0003 0G
+- Achievement unlock: ~0.0002 0G
+- Transaction recording: ~0.0002 0G
+- Daily reward claim: ~0.0003 0G
+
+### Performance Characteristics
+- All write operations are owner-only (backend controlled)
+- No player signatures required
+- Async design eliminates user-facing latency
+- Scalable to millions of transactions
+
+---
+
+## Security Features
+
+### Access Control
+- All write functions are restricted to contract owner
+- Owner is the backend deployer wallet
+- Prevents unauthorized data manipulation
+
+### Anti-Cheat Mechanisms
+- **Score Manager:** Time limits, max score validation, verification system
+- **Economy Manager:** Transaction limits, minimum intervals, balance checks
+- **Session Tracker:** Rate limiting via time-based checks
+
+### Data Integrity
+- Immutable on-chain records
+- Timestamp verification
+- Event logging for audit trails
+- Transparent public data
+
+---
+
+## Monitoring and Maintenance
+
+### Required Monitoring
+1. **Deployer Wallet Balance:** Alert when balance falls below 50 0G
+2. **Transaction Success Rate:** Monitor blockchain service success/failure logs
+3. **Contract Statistics:** Regular checks via `getStats()` functions
+4. **Event Emissions:** Track events for anomalies
+
+### Maintenance Tasks
+1. **Weekly:** Review transaction logs and contract stats
+2. **Monthly:** Analyze gas costs and optimize if needed
+3. **Quarterly:** Audit on-chain data for consistency
+4. **As Needed:** Update anti-cheat parameters
+
+---
+
+## Future Enhancements
+
+### Potential Additions
+1. **Tournament System:** Dedicated tournament contract with prize pools
+2. **NFT Integration:** Vehicle and achievement NFTs
+3. **Governance:** Community voting on game parameters
+4. **Cross-Chain:** Bridge to other blockchain networks
+5. **Staking:** Token staking for rewards
+
+### Scalability Considerations
+- Current design supports unlimited players
+- Leaderboard snapshots prevent gas bloat
+- Batch operations optimize gas usage
+- Archive system for historical data
+
+---
+
+## Development Resources
+
+### Contract Source Code
+All contracts are written in Solidity 0.8.20 with MIT license.
+
+### Hardhat Configuration
+```javascript
+networks: {
+  zerog_mainnet: {
+    url: "https://evmrpc.0g.ai",
+    chainId: 16661,
+    accounts: [DEPLOYER_PRIVATE_KEY]
+  }
+}
+```
+
+### Environment Variables Required
+```
+DEPLOYER_PRIVATE_KEY=<private_key>
+ZEROG_RPC_URL=https://evmrpc.0g.ai
+ZEROG_CHAIN_ID=16661
+
+SESSION_CONTRACT_ADDRESS=0x47B9D5B62C8302a89C435be307b9eAA8847FB295
+VEHICLE_CONTRACT_ADDRESS=0xB9305b4898418c31dB5995b6dbBB0D29Ce63dd05
+MISSION_CONTRACT_ADDRESS=0x4C2593C98bA57d24AFBBfd4ad62AeD2611416320
+SCORE_CONTRACT_ADDRESS=0xc82c80C0d243df6eE8d08D82EAF776b7D1E3e464
+ECONOMY_CONTRACT_ADDRESS=0x1821E2654B5700d6C7C76277991EC6076696E829
+```
+
+---
+
+## Support and Documentation
+
+### Block Explorer
+All contracts and transactions are publicly viewable at https://chainscan.0g.ai
+
+### Contact Information
+- Development Team: Kult Games
+- Technical Lead: Sidhanth (Potassium)
+
+### Version History
+- v1.0 (Initial Deployment) - Session Tracking
+- v2.0 (Current) - Full Game Integration with 5 contracts
+
+---
+
+**Document Version:** 2.0  
+**Last Updated:** February 2026  
+**Network:** 0G Mainnet  
+**Status:** Production

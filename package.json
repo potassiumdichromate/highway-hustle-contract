@@ -6,6 +6,10 @@
     "compile": "hardhat compile",
     "deploy:testnet": "hardhat run scripts/deploy.js --network zerog_testnet",
     "deploy:mainnet": "hardhat run scripts/deploy-mainnet.js --network zerog_mainnet",
+    "deploy:vehicle:mainnet": "hardhat run scripts/deploy_vehicle_manager.js --network zerog_mainnet",
+    "deploy:mission:mainnet": "hardhat run scripts/deploy-mission-manager.js --network zerog_mainnet",
+    "deploy:score:mainnet": "hardhat run scripts/deploy-score-manager.js --network zerog_mainnet",
+    "deploy:economy:mainnet": "hardhat run scripts/deploy-economy-manager.js --network zerog_mainnet",
     "estimate": "node scripts/estimate-costs.js",
     "monitor": "node scripts/monitor-mainnet.js",
     "test": "hardhat test"
