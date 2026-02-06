@@ -1,0 +1,411 @@
+# ZeroGPool Blockchain Integration Documentation
+
+## Overview
+
+ZeroGPool implements a comprehensive on-chain game data system on the 0G blockchain network. This document outlines all blockchain contracts, their functionalities, and data flows for the pool game with seasonal leaderboards and session tracking.
+
+---
+
+## Network Information
+
+**Network:** 0G Mainnet  
+**Chain ID:** 16661  
+**RPC URL:** https://evmrpc.0g.ai  
+**Block Explorer:** https://chainscan.0g.ai
+
+---
+
+## Deployed Contracts
+
+### 1. GameSessionTracker
+**Contract Address:** `0x3Cf93517c30D9C6078C7A16454bd482908619523`  
+**Explorer:** https://chainscan.0g.ai/address/0x3Cf93517c30D9C6078C7A16454bd482908619523
+
+**Purpose:** Tracks all user login sessions and comprehensive game statistics on-chain.
+
+**Recorded Data:**
+- User wallet address
+- Login count per user
+- Session timestamp
+- Complete game statistics per session:
+  - Total time played
+  - Total games played vs CPU
+  - Total games won vs CPU
+  - Total games played vs Human
+  - Total games won vs Human
+  - Total balls pocketed
+  - TT (Time Trial) best score
+  - Matrix best score
+
+**Key Functions:**
+- `recordSession()` - Records a new user login session with complete stats
+- `getUserLoginCount()` - Returns total number of logins for a user
+- `getLatestSession()` - Returns the most recent session for a user
+- `getUserSessions()` - Returns array of all sessions for a user
+- `getSessionByIndex()` - Returns a specific session by index
+- `getUserSessionCount()` - Returns total number of sessions for a user
+- `getTotalUsers()` - Returns total number of unique users
+- `getAllUsers()` - Returns paginated list of all users
+- `getContractStats()` - Returns contract-level statistics
+- `updateOperator()` - Updates the game operator address (owner only)
+
+**Trigger:** Called when user logs in or when their stats need to be recorded on-chain.
+
+---
+
+### 2. GameLeaderboard
+**Contract Address:** `0xE45cb11c4c29c522B30A5c1eBFc039bDB780C022`  
+**Explorer:** https://chainscan.0g.ai/address/0xE45cb11c4c29c522B30A5c1eBFc039bDB780C022
+
+**Purpose:** Manages seasonal and all-time leaderboards across multiple game categories with prize pool distribution.
+
+**Leaderboard Categories:**
+- 0: Total Balls Pocketed
+- 1: Games Won vs CPU
+- 2: Games Won vs Human
+- 3: TT (Time Trial) Best Score
+- 4: Matrix Best Score
+
+**Season Features:**
+- **Seasonal Leaderboards:** Top 100 players per category per season
+- **All-Time Records:** Permanent records for each category
+- **Prize Pool:** Native token (0G) prize distribution
+- **Automated Ranking:** Real-time ranking updates
+
+**Recorded Data:**
+- Player wallet address and name
+- Total balls pocketed
+- Total games won vs CPU
+- Total games won vs Human
+- TT best score
+- Matrix best score
+- Last updated timestamp
+- Player rank per category
+- Season information (start time, end time, active status, total players)
+- Prize pool amounts
+
+**Key Functions:**
+- `updateLeaderboard()` - Updates player's leaderboard entry (operator only)
+- `getTopPlayers()` - Returns top N players for a specific category and season
+- `getPlayerEntry()` - Returns player's entry for current season
+- `getPlayerEntryForSeason()` - Returns player's entry for specific season
+- `getPlayerRank()` - Returns player's rank in specific category
+- `startNewSeason()` - Starts a new competitive season (operator only)
+- `endSeason()` - Ends the current season (operator only)
+- `addToPrizePool()` - Adds funds to current season's prize pool
+- `distributePrizes()` - Distributes prizes to top players (operator only)
+- `getCurrentSeasonInfo()` - Returns current season details
+- `getAllTimeRecords()` - Returns all-time record holders
+- `updateOperator()` - Updates game operator address (operator only)
+- `emergencyWithdraw()` - Emergency fund withdrawal (operator only)
+
+**Trigger:** Called when player's game stats are updated or when viewing leaderboards.
+
+---
+
+## Data Flow Architecture
+
+### 1. Session Recording Flow
+```
+User Logs In → Backend API → MongoDB Update → 
+Blockchain Service (Async) → GameSessionTracker.recordSession()
+```
+
+### 2. Leaderboard Update Flow
+```
+Player Completes Game → Backend API → MongoDB Update → 
+Blockchain Service (Async) → GameLeaderboard.updateLeaderboard()
+```
+
+### 3. Prize Pool Flow
+```
+Funds Deposited → GameLeaderboard.addToPrizePool() → 
+Season Ends → Operator → GameLeaderboard.distributePrizes() → 
+Top Players Receive Prizes
+```
+
+### 4. Season Management Flow
+```
+Operator → GameLeaderboard.endSeason() → 
+Prize Distribution (if applicable) → 
+Operator → GameLeaderboard.startNewSeason() → 
+New Season Begins
+```
+
+---
+
+## Integration Strategy
+
+### Async Recording Pattern
+All blockchain write operations are executed asynchronously to avoid blocking API responses. The pattern follows:
+
+1. **Immediate Response:** API responds to client with MongoDB data immediately
+2. **Background Recording:** Blockchain transaction is submitted in the background
+3. **Non-Blocking:** API performance is unaffected by blockchain latency
+4. **Logging:** Success/failure is logged but does not impact user experience
+
+### Dual Storage Approach
+- **MongoDB:** Real-time gameplay data, fast queries, mutable
+- **Blockchain:** Immutable historical record, transparent verification, permanent storage
+
+### Error Handling
+- Blockchain failures are logged but do not break API functionality
+- MongoDB remains the source of truth for real-time gameplay
+- Blockchain provides immutable historical record and verification
+- Prize distribution requires explicit operator action after season ends
+
+---
+
+## Smart Contract Events
+
+All contracts emit events for transparency and tracking:
+
+### GameSessionTracker Events
+- `SessionRecorded` - New session recorded with user address, login count, timestamp, and total balls pocketed
+- `OperatorUpdated` - Game operator address updated
+
+### GameLeaderboard Events
+- `LeaderboardUpdated` - Player's leaderboard entry updated with player address, season, total balls pocketed, and timestamp
+- `SeasonStarted` - New season started with season number, start time, and end time
+- `SeasonEnded` - Season ended with season number and end time
+- `PrizePoolAdded` - Funds added to prize pool with season number and amount
+- `PrizeDistributed` - Prize distributed to player with player address, season, amount, and rank
+- `OperatorUpdated` - Game operator address updated
+- `AllTimeRecordBroken` - New all-time record set with player address, category name, and new record value
+
+---
+
+## Gas Costs and Performance
+
+### Average Gas Costs (0G Network)
+- Session recording: ~0.0002 0G
+- Leaderboard update (single player): ~0.0005 0G
+- Prize pool deposit: ~0.0001 0G
+- Prize distribution (per player): ~0.0003 0G
+- Season start/end: ~0.0001 0G
+
+### Performance Characteristics
+- All write operations are operator-only (backend controlled)
+- Async design eliminates user-facing latency
+- Top 100 limit per leaderboard prevents unbounded gas costs
+- Multiple categories tracked simultaneously
+- Scalable to millions of sessions and players
+
+---
+
+## Security Features
+
+### Access Control
+- **GameSessionTracker:** All write functions restricted to game operator (backend)
+- **GameLeaderboard:** All write functions restricted to game operator (backend)
+- Operator is the backend deployer wallet
+- Prevents unauthorized data manipulation
+- Emergency withdraw function for operator safety
+
+### Anti-Cheat Mechanisms
+- **Operator-Only Recording:** Players cannot submit their own stats
+- **Immutable Records:** Once recorded, session data cannot be altered
+- **Ranking Validation:** Automatic sorting and ranking prevents manipulation
+- **Prize Distribution Control:** Operator must manually trigger prize distribution
+- **Percentage Validation:** Prize percentages must sum to exactly 100%
+
+### Data Integrity
+- Immutable on-chain records
+- Timestamp verification
+- Event logging for audit trails
+- Transparent public data
+- All-time record tracking with historical context
+
+---
+
+## Seasonal Competition System
+
+### Season Structure
+- **Duration:** Configurable per season (default: 30 days)
+- **Auto-Start:** First season starts on contract deployment
+- **Manual Management:** Operator controls season transitions
+- **Player Tracking:** Unique player count per season
+- **Isolation:** Each season maintains separate leaderboards
+
+### Prize Pool Management
+- **Deposit Methods:** 
+  - Direct deposit via `addToPrizePool()`
+  - Automatic deposit via `receive()` function (sending 0G to contract)
+- **Distribution:** Manual distribution by operator after season ends
+- **Flexibility:** Operator defines prize split percentages
+- **Safety:** Prizes only distributed after season ends
+
+### Prize Distribution Example
+```javascript
+// Example: Top 3 prize distribution (50%, 30%, 20%)
+await gameLeaderboard.distributePrizes(
+  seasonNumber,
+  0, // Category: Total Balls Pocketed
+  [5000, 3000, 2000] // Percentages in basis points (10000 = 100%)
+);
+```
+
+---
+
+## Leaderboard Categories
+
+### Category 0: Total Balls Pocketed
+Tracks cumulative balls pocketed across all game modes. Rewards consistent play and skill.
+
+### Category 1: Games Won vs CPU
+Tracks victories against AI opponents. Tests single-player mastery.
+
+### Category 2: Games Won vs Human
+Tracks victories against human opponents. Competitive multiplayer ranking.
+
+### Category 3: TT Best Score
+Time Trial mode high score. Tests speed and precision.
+
+### Category 4: Matrix Best Score
+Matrix mode high score. Tests pattern recognition and strategy.
+
+---
+
+## Monitoring and Maintenance
+
+### Required Monitoring
+1. **Deployer Wallet Balance:** Alert when balance falls below 50 0G
+2. **Transaction Success Rate:** Monitor blockchain service success/failure logs
+3. **Prize Pool Levels:** Track prize pool accumulation per season
+4. **Season Timing:** Monitor season end dates for timely transitions
+5. **All-Time Records:** Track record-breaking events
+6. **Contract Statistics:** Regular checks via `getContractStats()`
+
+### Maintenance Tasks
+1. **Weekly:** 
+   - Review transaction logs and session counts
+   - Monitor prize pool growth
+   - Check leaderboard rankings for anomalies
+2. **End of Season:** 
+   - End current season via `endSeason()`
+   - Distribute prizes via `distributePrizes()`
+   - Start new season via `startNewSeason()`
+   - Archive season data off-chain if needed
+3. **Monthly:** 
+   - Analyze gas costs and optimize if needed
+   - Review all-time records
+   - Audit player statistics
+4. **Quarterly:** 
+   - Full contract audit
+   - Performance optimization review
+   - Security assessment
+
+---
+
+## Future Enhancements
+
+### Potential Additions
+1. **NFT Rewards:** 
+   - Season champion NFTs
+   - Achievement-based NFTs
+   - Exclusive cosmetics for top players
+2. **Staking System:** Token staking for bonus rewards
+3. **Tournament Mode:** 
+   - Bracket-based competitions
+   - Entry fees and prize pools
+   - Elimination tracking
+4. **Clan/Team System:** Group-based leaderboards and competitions
+5. **Dynamic Seasons:** Auto-start seasons with configurable parameters
+6. **Cross-Season Rankings:** Cumulative rankings across multiple seasons
+7. **Sponsor Integration:** Branded seasons with sponsor prize pools
+8. **Governance:** Player voting on season parameters
+
+### Scalability Considerations
+- Current design supports unlimited sessions
+- Top 100 limit per leaderboard prevents gas bloat
+- Multiple categories run in parallel without interference
+- Prize pool system scales with any token amount
+- Historical season data remains accessible indefinitely
+
+---
+
+## Development Resources
+
+### Contract Source Code
+All contracts are written in Solidity 0.8.20 with MIT license.
+
+### Hardhat Configuration
+```javascript
+networks: {
+  zerog_mainnet: {
+    url: "https://evmrpc.0g.ai",
+    chainId: 16661,
+    accounts: [DEPLOYER_PRIVATE_KEY]
+  }
+}
+```
+
+### Environment Variables Required
+```
+DEPLOYER_PRIVATE_KEY=<private_key>
+ZEROG_RPC_URL=https://evmrpc.0g.ai
+ZEROG_CHAIN_ID=16661
+
+GAME_SESSION_CONTRACT_ADDRESS=0x3Cf93517c30D9C6078C7A16454bd482908619523
+GAME_LEADERBOARD_CONTRACT_ADDRESS=0xE45cb11c4c29c522B30A5c1eBFc039bDB780C022
+```
+
+### UserStats Structure (for recordSession)
+```javascript
+const userStats = {
+  totalTimePlayed: 3600,           // seconds
+  totalGamesPlayedVsCPU: 50,
+  totalGamesWonVsCPU: 35,
+  totalGamesPlayedVsHuman: 30,
+  totalGamesWonVsHuman: 20,
+  totalBallsPocketed: 1500,
+  ttBestScore: 95000,
+  matrixBestScore: 85000
+};
+
+await gameSessionTracker.recordSession(playerAddress, userStats);
+```
+
+### Leaderboard Update Example
+```javascript
+await gameLeaderboard.updateLeaderboard(
+  playerAddress,
+  "PlayerName",
+  1500,  // totalBallsPocketed
+  35,    // totalGamesWonVsCPU
+  20,    // totalGamesWonVsHuman
+  95000, // ttBestScore
+  85000  // matrixBestScore
+);
+```
+
+---
+
+## Support and Documentation
+
+### Block Explorer
+All contracts and transactions are publicly viewable at https://chainscan.0g.ai
+
+### Contract Addresses (Quick Reference)
+- **GameSessionTracker:** `0x3Cf93517c30D9C6078C7A16454bd482908619523`
+- **GameLeaderboard:** `0xE45cb11c4c29c522B30A5c1eBFc039bDB780C022`
+
+### API Integration Points
+1. **Session Recording:** POST to backend → Backend calls `recordSession()`
+2. **Leaderboard Update:** POST to backend → Backend calls `updateLeaderboard()`
+3. **Leaderboard Query:** Frontend calls `getTopPlayers()` directly (read-only)
+4. **Player Stats:** Frontend calls `getPlayerEntry()` directly (read-only)
+
+### Contact Information
+- Development Team: Kult Games
+- Technical Lead: Sidhanth (Potassium)
+
+### Version History
+- v1.0 (February 2026) - Initial deployment with Session Tracking and Multi-Category Seasonal Leaderboards
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** February 6, 2026  
+**Network:** 0G Mainnet  
+**Status:** Production
